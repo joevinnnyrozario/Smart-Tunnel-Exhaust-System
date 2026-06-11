@@ -22,8 +22,6 @@ Usage:
     df = fuser.fuse(df)  # Adds 3 new columns
 """
 
-import pandas as pd
-import numpy as np
 
 import config
 

@@ -98,8 +98,17 @@ class TrainModel:
     # Split
     # ------------------------------------------------------------------
     def split_data(self):
-        """Stratified train/test split on AQI labels."""
+        """Stratified train/test split on AQI labels with robust fallbacks."""
+        # Check if the dataset is extremely small
+        if len(self.X) < 5:
+            print("WARNING: Dataset is too small for validation split. Using entire set for training and testing.")
+            self.X_train, self.X_test = self.X, self.X
+            self.y_aqi_train, self.y_aqi_test = self.y_aqi, self.y_aqi
+            self.y_fan_train, self.y_fan_test = self.y_fan, self.y_fan
+            return True
+
         try:
+            # First, try standard stratified split
             (
                 self.X_train,
                 self.X_test,
@@ -115,13 +124,36 @@ class TrainModel:
                 random_state=config.SPLIT_RANDOM_STATE,
                 stratify=self.y_aqi,
             )
-            print("Data split successfully!")
-            print(f"  Training set: {self.X_train.shape[0]} samples ({int((1-config.TEST_SIZE)*100)}%)")
-            print(f"  Testing set:  {self.X_test.shape[0]} samples ({int(config.TEST_SIZE*100)}%)\n")
-            return True
-        except Exception as e:
-            print(f"Error splitting data: {e}")
-            return False
+            print("Data split successfully using stratified sampling!")
+        except Exception as stratified_err:
+            print(f"Stratified split failed: {stratified_err}. Falling back to standard split.")
+            try:
+                # Fall back to non-stratified split
+                (
+                    self.X_train,
+                    self.X_test,
+                    self.y_aqi_train,
+                    self.y_aqi_test,
+                    self.y_fan_train,
+                    self.y_fan_test,
+                ) = train_test_split(
+                    self.X,
+                    self.y_aqi,
+                    self.y_fan,
+                    test_size=config.TEST_SIZE,
+                    random_state=config.SPLIT_RANDOM_STATE,
+                    stratify=None,
+                )
+                print("Data split successfully using standard (non-stratified) sampling.")
+            except Exception as std_err:
+                print(f"Standard split failed: {std_err}. Falling back to using full dataset.")
+                self.X_train, self.X_test = self.X, self.X
+                self.y_aqi_train, self.y_aqi_test = self.y_aqi, self.y_aqi
+                self.y_fan_train, self.y_fan_test = self.y_fan, self.y_fan
+
+        print(f"  Training set: {self.X_train.shape[0]} samples")
+        print(f"  Testing set:  {self.X_test.shape[0]} samples\n")
+        return True
 
     # ------------------------------------------------------------------
     # Train
@@ -169,32 +201,51 @@ class TrainModel:
     # Cross-validation
     # ------------------------------------------------------------------
     def cross_validate(self):
-        """Run stratified k-fold CV on both models."""
+        """Run stratified/standard k-fold CV on both models with robust fallbacks."""
+        num_samples = len(self.X)
+        if num_samples < 5:
+            print("WARNING: Skipping cross-validation (dataset too small).")
+            return
+
+        folds = min(config.CV_FOLDS, num_samples)
         print("=" * 50)
-        print(f"CROSS-VALIDATION ({config.CV_FOLDS}-fold stratified)")
+        print(f"CROSS-VALIDATION ({folds}-fold)")
         print("=" * 50)
 
-        skf = StratifiedKFold(
-            n_splits=config.CV_FOLDS,
-            shuffle=True,
-            random_state=config.SPLIT_RANDOM_STATE,
-        )
+        # Try StratifiedKFold first
+        try:
+            skf = StratifiedKFold(
+                n_splits=folds,
+                shuffle=True,
+                random_state=config.SPLIT_RANDOM_STATE,
+            )
+            # Verify we have enough samples per class for StratifiedKFold
+            class_counts = self.y_aqi.value_counts()
+            if class_counts.min() < folds:
+                print(f"  [Notice] Least populated class has {class_counts.min()} samples (< {folds} folds).")
+                print("  Falling back to standard KFold cross-validation.")
+                from sklearn.model_selection import KFold
+                skf = KFold(n_splits=folds, shuffle=True, random_state=config.SPLIT_RANDOM_STATE)
+            
+            # AQI model CV
+            aqi_rf = self._create_rf()
+            self.cv_scores_aqi = cross_val_score(
+                aqi_rf, self.X, self.y_aqi, cv=skf, scoring="accuracy"
+            )
+            print(f"\nAQI Model CV Scores:  {self.cv_scores_aqi.round(4)}")
+            print(f"  Mean: {self.cv_scores_aqi.mean():.4f} +/- {self.cv_scores_aqi.std():.4f}")
 
-        # AQI model CV
-        aqi_rf = self._create_rf()
-        self.cv_scores_aqi = cross_val_score(
-            aqi_rf, self.X, self.y_aqi, cv=skf, scoring="accuracy"
-        )
-        print(f"\nAQI Model CV Scores:  {self.cv_scores_aqi.round(4)}")
-        print(f"  Mean: {self.cv_scores_aqi.mean():.4f} +/- {self.cv_scores_aqi.std():.4f}")
-
-        # Fan model CV
-        fan_rf = self._create_rf()
-        self.cv_scores_fan = cross_val_score(
-            fan_rf, self.X, self.y_fan, cv=skf, scoring="accuracy"
-        )
-        print(f"\nFan Speed Model CV Scores: {self.cv_scores_fan.round(4)}")
-        print(f"  Mean: {self.cv_scores_fan.mean():.4f} +/- {self.cv_scores_fan.std():.4f}")
+            # Fan model CV
+            fan_rf = self._create_rf()
+            self.cv_scores_fan = cross_val_score(
+                fan_rf, self.X, self.y_fan, cv=skf, scoring="accuracy"
+            )
+            print(f"\nFan Speed Model CV Scores: {self.cv_scores_fan.round(4)}")
+            print(f"  Mean: {self.cv_scores_fan.mean():.4f} +/- {self.cv_scores_fan.std():.4f}")
+            
+        except Exception as cv_err:
+            print(f"Cross-validation skipped due to error: {cv_err}")
+            
         print("=" * 50 + "\n")
 
     # ------------------------------------------------------------------

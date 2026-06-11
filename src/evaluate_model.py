@@ -21,14 +21,16 @@ import matplotlib
 matplotlib.use("Agg")  # Non-interactive backend for headless environments
 import matplotlib.pyplot as plt
 from sklearn.metrics import (
+    precision_score,
+    recall_score,
+    f1_score,
     accuracy_score,
     confusion_matrix,
     classification_report,
     ConfusionMatrixDisplay,
 )
-
+import json
 import config
-
 
 class EvaluateModel:
     """Evaluate AQI and fan-speed models with full metrics + plots."""
@@ -36,20 +38,7 @@ class EvaluateModel:
     def __init__(self, X_test, y_aqi_test, y_fan_test,
                  model_dir=config.SYNTH_MODEL_DIR,
                  results_dir=config.SYNTH_RESULTS_DIR):
-        """
-        Parameters
-        ----------
-        X_test : pd.DataFrame
-            Test feature matrix (7 fused features).
-        y_aqi_test : pd.Series
-            True AQI class labels for test set.
-        y_fan_test : pd.Series
-            True fan speed labels for test set.
-        model_dir : str
-            Directory containing saved model .pkl files.
-        results_dir : str
-            Directory to save evaluation outputs.
-        """
+        
         self.X_test = X_test
         self.y_aqi_test = y_aqi_test
         self.y_fan_test = y_fan_test
@@ -96,15 +85,82 @@ class EvaluateModel:
     # Calculate metrics
     # ------------------------------------------------------------------
     def calculate_metrics(self):
-        """Compute accuracy, classification reports, and confusion matrices."""
-        self.metrics["aqi_accuracy"] = accuracy_score(self.y_aqi_test, self.y_aqi_pred)
-        self.metrics["fan_accuracy"] = accuracy_score(self.y_fan_test, self.y_fan_pred)
+    
+        self.metrics["aqi_accuracy"] = accuracy_score(
+            self.y_aqi_test,
+            self.y_aqi_pred
+        )
 
-        self.metrics["aqi_report"] = classification_report(self.y_aqi_test, self.y_aqi_pred)
-        self.metrics["fan_report"] = classification_report(self.y_fan_test, self.y_fan_pred)
+        self.metrics["fan_accuracy"] = accuracy_score(
+            self.y_fan_test,
+            self.y_fan_pred
+        )
 
-        self.metrics["aqi_cm"] = confusion_matrix(self.y_aqi_test, self.y_aqi_pred)
-        self.metrics["fan_cm"] = confusion_matrix(self.y_fan_test, self.y_fan_pred)
+        self.metrics["aqi_precision"] = precision_score(
+            self.y_aqi_test,
+            self.y_aqi_pred,
+            average="weighted",
+            zero_division=0
+        )
+
+        self.metrics["aqi_recall"] = recall_score(
+            self.y_aqi_test,
+            self.y_aqi_pred,
+            average="weighted",
+            zero_division=0
+        )
+
+        self.metrics["aqi_f1"] = f1_score(
+            self.y_aqi_test,
+            self.y_aqi_pred,
+            average="weighted",
+            zero_division=0
+        )
+
+        self.metrics["fan_precision"] = precision_score(
+            self.y_fan_test,
+            self.y_fan_pred,
+            average="weighted",
+            zero_division=0
+        )
+
+        self.metrics["fan_recall"] = recall_score(
+            self.y_fan_test,
+            self.y_fan_pred,
+            average="weighted",
+            zero_division=0
+        )
+
+        self.metrics["fan_f1"] = f1_score(
+            self.y_fan_test,
+            self.y_fan_pred,
+            average="weighted",
+            zero_division=0
+        )
+
+        self.metrics["aqi_report"] = classification_report(
+            self.y_aqi_test,
+            self.y_aqi_pred,
+            zero_division=0
+        )
+
+        self.metrics["fan_report"] = classification_report(
+            self.y_fan_test,
+            self.y_fan_pred,
+            zero_division=0
+        )
+
+        self.metrics["aqi_cm"] = confusion_matrix(
+            self.y_aqi_test,
+            self.y_aqi_pred,
+            labels=self.aqi_model.classes_
+        )
+
+        self.metrics["fan_cm"] = confusion_matrix(
+            self.y_fan_test,
+            self.y_fan_pred,
+            labels=self.fan_model.classes_
+        )
 
     def display_metrics(self):
         """Print all evaluation metrics."""
@@ -136,8 +192,8 @@ class EvaluateModel:
 
         fig, axes = plt.subplots(1, 2, figsize=(16, 6))
 
-        # AQI confusion matrix
-        aqi_labels = sorted(self.y_aqi_test.unique())
+        # AQI confusion matrix (use classes from model to align with confusion matrix labels)
+        aqi_labels = list(self.aqi_model.classes_)
         ConfusionMatrixDisplay(
             confusion_matrix=self.metrics["aqi_cm"],
             display_labels=aqi_labels,
@@ -146,7 +202,7 @@ class EvaluateModel:
         axes[0].tick_params(axis="x", rotation=30)
 
         # Fan speed confusion matrix
-        fan_labels = sorted(self.y_fan_test.unique())
+        fan_labels = list(self.fan_model.classes_)
         ConfusionMatrixDisplay(
             confusion_matrix=self.metrics["fan_cm"],
             display_labels=fan_labels,
@@ -223,7 +279,190 @@ class EvaluateModel:
             f.write(self.metrics["fan_report"])
 
         print(f"[OK] Classification report saved: {report_path}")
+    def save_dashboard_data(self):
 
+        os.makedirs(self.results_dir, exist_ok=True)
+
+        # =====================================================
+        # Metrics JSON
+        # =====================================================
+        metrics = {
+            "aqi_model": {
+                "accuracy": float(self.metrics["aqi_accuracy"]),
+                "precision": float(self.metrics["aqi_precision"]),
+                "recall": float(self.metrics["aqi_recall"]),
+                "f1_score": float(self.metrics["aqi_f1"])
+            },
+            "fan_model": {
+                "accuracy": float(self.metrics["fan_accuracy"]),
+                "precision": float(self.metrics["fan_precision"]),
+                "recall": float(self.metrics["fan_recall"]),
+                "f1_score": float(self.metrics["fan_f1"])
+            }
+        }
+
+        with open(
+            os.path.join(self.results_dir, "metrics.json"),
+            "w"
+        ) as f:
+            json.dump(metrics, f, indent=4)
+
+        # =====================================================
+        # Save Class Labels
+        # =====================================================
+        with open(
+            os.path.join(self.results_dir, "aqi_class_labels.json"),
+            "w"
+        ) as f:
+            json.dump(
+                [str(x) for x in self.aqi_model.classes_],
+                f,
+                indent=4
+            )
+
+        with open(
+            os.path.join(self.results_dir, "fan_class_labels.json"),
+            "w"
+        ) as f:
+            json.dump(
+                [int(x) for x in self.fan_model.classes_],
+                f,
+                indent=4
+            )
+
+        # =====================================================
+        # AQI Confusion Matrix CSV
+        # =====================================================
+        aqi_cm_df = pd.DataFrame(
+            self.metrics["aqi_cm"],
+            index=self.aqi_model.classes_,
+            columns=self.aqi_model.classes_
+        )
+
+        aqi_cm_df.to_csv(
+            os.path.join(
+                self.results_dir,
+                "aqi_confusion_matrix.csv"
+            )
+        )
+
+        # =====================================================
+        # Fan Confusion Matrix CSV
+        # =====================================================
+        fan_cm_df = pd.DataFrame(
+            self.metrics["fan_cm"],
+            index=self.fan_model.classes_,
+            columns=self.fan_model.classes_
+        )
+
+        fan_cm_df.to_csv(
+            os.path.join(
+                self.results_dir,
+                "fan_confusion_matrix.csv"
+            )
+        )
+
+        # =====================================================
+        # AQI Confusion Matrix JSON
+        # =====================================================
+        aqi_cm_json = {
+            "labels": [str(x) for x in self.aqi_model.classes_],
+            "matrix": self.metrics["aqi_cm"].tolist()
+        }
+
+        with open(
+            os.path.join(
+                self.results_dir,
+                "aqi_confusion_matrix.json"
+            ),
+            "w"
+        ) as f:
+            json.dump(aqi_cm_json, f, indent=4)
+
+        # =====================================================
+        # Fan Confusion Matrix JSON
+        # =====================================================
+        fan_cm_json = {
+            "labels": [int(x) for x in self.fan_model.classes_],
+            "matrix": self.metrics["fan_cm"].tolist()
+        }
+
+        with open(
+            os.path.join(
+                self.results_dir,
+                "fan_confusion_matrix.json"
+            ),
+            "w"
+        ) as f:
+            json.dump(fan_cm_json, f, indent=4)
+
+        print("[OK] Dashboard data exported")
+        print(f"[OK] Metrics saved to: {self.results_dir}/metrics.json")
+        print(f"[OK] AQI confusion matrix saved")
+        print(f"[OK] Fan confusion matrix saved")
+        
+        os.makedirs(self.results_dir, exist_ok=True)
+            # Metrics
+        metrics = {
+            "aqi_model": {
+                "accuracy": float(self.metrics["aqi_accuracy"]),
+                "precision": float(self.metrics["aqi_precision"]),
+                "recall": float(self.metrics["aqi_recall"]),
+                "f1_score": float(self.metrics["aqi_f1"])
+            },
+            "fan_model": {
+                "accuracy": float(self.metrics["fan_accuracy"]),
+                "precision": float(self.metrics["fan_precision"]),
+                "recall": float(self.metrics["fan_recall"]),
+                "f1_score": float(self.metrics["fan_f1"])
+            }
+        }
+        with open(
+            os.path.join(self.results_dir, "aqi_class_labels.json"),
+            "w"
+        ) as f:
+            json.dump(
+                [str(x) for x in self.aqi_model.classes_],
+                f,
+                indent=4
+            )
+
+        with open(
+            os.path.join(self.results_dir, "fan_class_labels.json"),
+            "w"
+        ) as f:
+            json.dump(
+                [int(x) for x in self.fan_model.classes_],
+                f,
+                indent=4
+            )
+        # AQI Confusion Matrix
+        aqi_cm_df = pd.DataFrame(
+            self.metrics["aqi_cm"],
+            index=self.aqi_model.classes_,
+            columns=self.aqi_model.classes_
+        )
+
+        aqi_cm_df.to_csv(
+            os.path.join(
+                self.results_dir,
+                "aqi_confusion_matrix.csv"
+            )
+        )
+        # Fan Confusion Matrix
+        fan_cm_df = pd.DataFrame(
+            self.metrics["fan_cm"],
+            index=self.fan_model.classes_,
+            columns=self.fan_model.classes_
+        )
+        fan_cm_df.to_csv(
+            os.path.join(
+                self.results_dir,
+                "fan_confusion_matrix.csv"
+            )
+        )
+
+        print("[OK] Dashboard data exported")
     # ------------------------------------------------------------------
     # Full pipeline
     # ------------------------------------------------------------------
@@ -237,14 +476,14 @@ class EvaluateModel:
             return
         if not self.predict():
             return
-
         self.calculate_metrics()
         self.display_metrics()
         self.save_confusion_matrices()
         self.save_feature_importance()
         self.save_reports()
-
         print("\nEvaluation completed successfully!\n")
+        self.save_dashboard_data()
+
 
 
 # ======================================================================

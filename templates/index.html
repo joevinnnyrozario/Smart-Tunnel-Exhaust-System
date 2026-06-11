@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-section">
+    <div class="text-center mb-5">
+        <h1 style="color: #2c3e50; font-size: 3rem; margin-bottom: 1rem;">
+            <i class="bi bi-speedometer2" style="font-size: 3.5rem; color: #3498db;"></i>
+        </h1>
+        <h2 style="color: #2c3e50;">Tunnel Exhaust System</h2>
+        <p style="font-size: 1.2rem; color: #7f8c8d;">Real-time Monitoring & Air Quality Analysis</p>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 col-lg-3 mb-4">
+            <a href="/page1" class="text-decoration-none">
+                <div class="chart-container" style="text-align: center; cursor: pointer; transition: all 0.3s ease; height: 100%;">
+                    <i class="bi bi-graph-up" style="font-size: 2.5rem; color: #3498db; margin-bottom: 1rem; display: block;"></i>
+                    <h5 style="color: #2c3e50; margin-bottom: 0.5rem;">Model Performance</h5>
+                    <p style="color: #7f8c8d; font-size: 0.95rem;">View accuracy, precision, recall, and F1 scores for both AQI and Fan control models</p>
+                    <small style="color: #3498db; font-weight: bold;">Go to Page 1 →</small>
+                </div>
+            </a>
+        </div>
+
+        <div class="col-md-6 col-lg-3 mb-4">
+            <a href="/page2" class="text-decoration-none">
+                <div class="chart-container" style="text-align: center; cursor: pointer; transition: all 0.3s ease; height: 100%;">
+                    <i class="bi bi-table" style="font-size: 2.5rem; color: #e74c3c; margin-bottom: 1rem; display: block;"></i>
+                    <h5 style="color: #2c3e50; margin-bottom: 0.5rem;">Confusion Matrix</h5>
+                    <p style="color: #7f8c8d; font-size: 0.95rem;">Analyze true positives, false positives, and other classification metrics</p>
+                    <small style="color: #3498db; font-weight: bold;">Go to Page 2 →</small>
+                </div>
+            </a>
+        </div>
+
+        <div class="col-md-6 col-lg-3 mb-4">
+            <a href="/page3" class="text-decoration-none">
+                <div class="chart-container" style="text-align: center; cursor: pointer; transition: all 0.3s ease; height: 100%;">
+                    <i class="bi bi-bar-chart" style="font-size: 2.5rem; color: #f39c12; margin-bottom: 1rem; display: block;"></i>
+                    <h5 style="color: #2c3e50; margin-bottom: 0.5rem;">Feature Importance</h5>
+                    <p style="color: #7f8c8d; font-size: 0.95rem;">Explore Random Forest feature importance and contribution scores</p>
+                    <small style="color: #3498db; font-weight: bold;">Go to Page 3 →</small>
+                </div>
+            </a>
+        </div>
+
+        <div class="col-md-6 col-lg-3 mb-4">
+            <a href="/page4" class="text-decoration-none">
+                <div class="chart-container" style="text-align: center; cursor: pointer; transition: all 0.3s ease; height: 100%;">
+                    <i class="bi bi-activity" style="font-size: 2.5rem; color: #27ae60; margin-bottom: 1rem; display: block;"></i>
+                    <h5 style="color: #2c3e50; margin-bottom: 0.5rem;">Live Sensors</h5>
+                    <p style="color: #7f8c8d; font-size: 0.95rem;">Monitor real-time sensor data: MQ2, MQ3, temperature, and humidity</p>
+                    <small style="color: #3498db; font-weight: bold;">Go to Page 4 →</small>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <!-- System Overview -->
+    <div class="row mt-5">
+        <div class="col-md-12">
+            <div class="chart-container">
+                <h3 style="color: #2c3e50; margin-bottom: 1.5rem;">
+                    <i class="bi bi-info-circle"></i> System Overview
+                </h3>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5 style="color: #2c3e50; margin-bottom: 1rem;">Hardware Components</h5>
+                        <ul style="color: #7f8c8d;">
+                            <li><strong>Microcontroller:</strong> ESP8266 NodeMCU</li>
+                            <li><strong>Gas Sensors:</strong> MQ2 (Smoke), MQ3 (Vapor)</li>
+                            <li><strong>Environmental:</strong> DHT11 (Temp + Humidity)</li>
+                            <li><strong>Communication:</strong> WiFi + MQTT</li>
+                            <li><strong>ADC:</strong> 10-bit internal or ADS1115 external</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <h5 style="color: #2c3e50; margin-bottom: 1rem;">Software Stack</h5>
+                        <ul style="color: #7f8c8d;">
+                            <li><strong>Backend:</strong> Flask Web Framework</li>
+                            <li><strong>ML Models:</strong> Random Forest (scikit-learn)</li>
+                            <li><strong>Visualization:</strong> Plotly.js</li>
+                            <li><strong>Frontend:</strong> Bootstrap 5, HTML5, CSS3</li>
+                            <li><strong>Data Processing:</strong> Pandas, NumPy</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="row mt-4">
+        <div class="col-md-3">
+            <div class="chart-container" style="text-align: center;">
+                <div class="metric-value" style="color: #3498db;">4</div>
+                <div class="metric-label">Pages</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="chart-container" style="text-align: center;">
+                <div class="metric-value" style="color: #e74c3c;">3</div>
+                <div class="metric-label">Sensors</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="chart-container" style="text-align: center;">
+                <div class="metric-value" style="color: #f39c12;">2</div>
+                <div class="metric-label">ML Models</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="chart-container" style="text-align: center;">
+                <div class="metric-value" style="color: #27ae60;">Real-time</div>
+                <div class="metric-label">Monitoring</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Getting Started -->
+    <div class="row mt-5">
+        <div class="col-md-12">
+            <div class="chart-container">
+                <h3 style="color: #2c3e50; margin-bottom: 1rem;">
+                    <i class="bi bi-play-circle"></i> Getting Started
+                </h3>
+                <ol style="color: #7f8c8d; line-height: 2;">
+                    <li>Use the navigation bar at the top to browse between different pages</li>
+                    <li>Visit <strong>Page 1</strong> to check model performance metrics</li>
+                    <li>Review <strong>Page 2</strong> for detailed confusion matrix analysis</li>
+                    <li>Analyze <strong>Page 3</strong> to understand feature importance in predictions</li>
+                    <li>Monitor <strong>Page 4</strong> for real-time sensor readings and trends</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

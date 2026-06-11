@@ -11,10 +11,9 @@ Usage:
 
 import os
 import pandas as pd
-import numpy as np
+
 
 import config
-
 
 class Preprocessing:
     """Load, inspect, and clean raw sensor data."""

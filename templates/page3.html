@@ -1,0 +1,215 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    #featureImportanceChart {
+        width: 100%;
+        height: 550px;        /* ← increase from 480px */
+        min-height: 550px;
+    }
+
+    .chart-container:has(#featureImportanceChart) {
+        min-height: 600px;    /* ← increase from 500px */
+        height: 600px;
+        overflow: visible;
+    }
+</style>
+<div class="page-section">
+    <h1 class="page-title"><i class="bi bi-bar-chart"></i>Feature Importance</h1>
+    
+    <div class="row">
+        <div class="col-md-12">
+            <div class="chart-container">
+                <div id="featureImportanceChart" class="loading">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Feature Descriptions -->
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="chart-container">
+                <h5><i class="bi bi-info-circle"></i> Feature Information</h5>
+                <div class="mt-3">
+                    <div class="mb-3">
+                        <h6><span class="badge bg-primary">MQ2_Raw</span></h6>
+                        <p class="small">
+                            Smoke and combustible gas sensor reading. Measures volatile organic compounds and smoke concentration. 
+                            High importance indicates this is the primary pollutant indicator.
+                        </p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6><span class="badge bg-primary">MQ3_Raw</span></h6>
+                        <p class="small">
+                            Alcohol and vapor sensor reading. Detects ethanol and various volatile compounds. 
+                            Contributes to overall air quality assessment.
+                        </p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6><span class="badge bg-primary">Temperature</span></h6>
+                        <p class="small">
+                            Environmental temperature in Celsius. Affects sensor sensitivity and overall tunnel conditions. 
+                            Important for compensating sensor drift.
+                        </p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6><span class="badge bg-primary">Humidity</span></h6>
+                        <p class="small">
+                            Relative humidity percentage. Affects gas sensor response and overall sensor accuracy. 
+                            Important environmental factor.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="chart-container">
+                <h5><i class="bi bi-lightbulb"></i> Model Interpretation</h5>
+                <div class="mt-3">
+                    <p>
+                        <strong>Feature importance</strong> shows how much each input feature contributes to the Random Forest model's 
+                        predictions. Higher values indicate that the model relies more heavily on that feature.
+                    </p>
+                    <hr>
+                    <p><strong>Key Insights:</strong></p>
+                    <ul>
+                        <li>Features with higher importance scores are better predictors of AQI</li>
+                        <li>MQ2_Raw typically dominates because smoke is the primary pollutant</li>
+                        <li>Environmental factors (Temperature, Humidity) act as context modifiers</li>
+                        <li>All features together provide robust air quality assessment</li>
+                    </ul>
+                    <hr>
+                    <p><strong>Application:</strong></p>
+                    <ul>
+                        <li>Sensor maintenance priorities - focus on high-importance sensors</li>
+                        <li>Redundancy strategy - ensure critical sensors have backups</li>
+                        <li>Calibration focus - prioritize calibration of important sensors</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Feature Statistics Table -->
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="chart-container">
+                <h5><i class="bi bi-table"></i> Feature Importance Statistics</h5>
+                <table class="table table-striped table-hover mt-3">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Feature</th>
+                            <th>Importance Score</th>
+                            <th>Percentage</th>
+                            <th>Rank</th>
+                        </tr>
+                    </thead>
+                    <tbody id="featureStatsTable">
+                        <tr>
+                            <td colspan="4" class="text-center">Loading feature statistics...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Model Details -->
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="chart-container">
+                <h5><i class="bi bi-gear"></i> Random Forest Model Details</h5>
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <ul class="list-unstyled">
+                            <li><strong>Algorithm:</strong> Random Forest Classifier</li>
+                            <li><strong>Number of Trees:</strong> 100</li>
+                            <li><strong>Max Depth:</strong> 20</li>
+                            <li><strong>Min Samples Split:</strong> 5</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <ul class="list-unstyled">
+                            <li><strong>Min Samples Leaf:</strong> 2</li>
+                            <li><strong>Number of Features:</strong> 4</li>
+                            <li><strong>Training Set Size:</strong> 10,000+</li>
+                            <li><strong>Feature Importance Method:</strong> Mean Decrease in Impurity</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Load feature importance chart
+    fetch('/api/page3/feature-importance')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            // Check if error response
+            if (data.error) {
+                throw new Error(data.error);
+            }
+            
+            // Display the chart
+            const chartDiv = document.getElementById('featureImportanceChart');
+            chartDiv.classList.remove('loading');
+            Plotly.newPlot('featureImportanceChart', data.data, data.layout, {responsive: true});
+            
+            // Update feature statistics table
+            if (data.data && data.data[0] && data.data[0].y) {
+                const features = data.data[0].y;
+                const importances = data.data[0].x;
+                
+                const total = importances.reduce((a, b) => a + b, 0);
+                let tableHTML = '';
+                
+                features.forEach((feature, index) => {
+                    const importance = importances[index];
+                    const percentage = ((importance / total) * 100).toFixed(1);
+                    tableHTML += `
+                        <tr>
+                            <td><strong>${feature}</strong></td>
+                            <td>${importance.toFixed(4)}</td>
+                            <td>${percentage}%</td>
+                            <td><span class="badge bg-primary">#${index + 1}</span></td>
+                        </tr>
+                    `;
+                });
+                
+                if (document.getElementById('featureStatsTable')) {
+                    document.getElementById('featureStatsTable').innerHTML = tableHTML;
+                }
+            }
+        })
+        .catch(error => {
+        console.error('Error loading feature importance:', error);
+        const chartDiv = document.getElementById('featureImportanceChart');
+        chartDiv.classList.remove('loading');
+        chartDiv.innerHTML = `
+            <div style="padding: 2rem; text-align: center;">
+                <p class="text-danger"><i class="bi bi-exclamation-triangle"></i> <strong>Error loading chart:</strong></p>
+                <p class="text-muted">${error.message}</p>
+                <p class="small">Using sample data instead...</p>
+            </div>
+        `;
+    });
+</script>
+{% endblock %}

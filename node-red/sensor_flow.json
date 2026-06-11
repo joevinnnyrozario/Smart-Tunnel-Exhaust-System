@@ -1,0 +1,131 @@
+[
+  {
+    "id": "e838b0e897992797",
+    "type": "tab",
+    "label": "Tunnel Exhaust Sensors",
+    "disabled": false,
+    "info": ""
+  },
+  {
+    "id": "c623d38e6b18593a",
+    "type": "mqtt in",
+    "z": "e838b0e897992797",
+    "name": "Subscribe tunnel/sensors",
+    "topic": "tunnel/sensors",
+    "qos": "0",
+    "datatype": "json",
+    "broker": "c68adbe65421da63",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 190,
+    "y": 140,
+    "wires": [
+      [
+        "ea6cd66db48eb032",
+        "fa9c238b1f8eb065"
+      ]
+    ]
+  },
+  {
+    "id": "ea6cd66db48eb032",
+    "type": "debug",
+    "z": "e838b0e897992797",
+    "name": "Debug Output",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "payload",
+    "targetType": "msg",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 450,
+    "y": 80,
+    "wires": []
+  },
+  {
+    "id": "fa9c238b1f8eb065",
+    "type": "csv",
+    "z": "e838b0e897992797",
+    "name": "Format as CSV Row",
+    "sep": ",",
+    "hdrin": false,
+    "hdrout": "none",
+    "multi": "one",
+    "ret": "\\n",
+    "temp": "Temperature,Humidity,MQ2_Raw,MQ3_Raw",
+    "skip": "0",
+    "strings": true,
+    "include_empty_strings": "",
+    "include_null_values": "",
+    "x": 470,
+    "y": 180,
+    "wires": [
+      [
+        "5a8b79d20c5ebd7e"
+      ]
+    ]
+  },
+  {
+    "id": "5a8b79d20c5ebd7e",
+    "type": "file",
+    "z": "e838b0e897992797",
+    "name": "Append to CSV File",
+    "filename": "c:\\Users\\dasbi\\CometKares\\Tunnel_Exhaust_System\\data\\real\\sensor_data.csv",
+    "appendNewline": true,
+    "createDir": true,
+    "overwriteFile": "false",
+    "encoding": "utf8",
+    "x": 730,
+    "y": 180,
+    "wires": [
+      [
+        "2d8b4e7e651bf230"
+      ]
+    ]
+  },
+  {
+    "id": "2d8b4e7e651bf230",
+    "type": "debug",
+    "z": "e838b0e897992797",
+    "name": "File Log Confirmation",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": true,
+    "complete": "\"Logged row: \" & payload",
+    "targetType": "jsonata",
+    "statusVal": "payload",
+    "statusType": "auto",
+    "x": 960,
+    "y": 180,
+    "wires": []
+  },
+  {
+    "id": "c68adbe65421da63",
+    "type": "mqtt-broker",
+    "name": "Mosquitto Broker",
+    "broker": "192.168.0.233",
+    "port": "1883",
+    "clientid": "NodeRED_Tunnel_Client",
+    "autoConnect": true,
+    "usetls": false,
+    "protocolVersion": "4",
+    "keepalive": "60",
+    "cleansession": true,
+    "birthTopic": "",
+    "birthQos": "0",
+    "birthPayload": "",
+    "birthMsg": {},
+    "closeTopic": "",
+    "closeQos": "0",
+    "closePayload": "",
+    "closeMsg": {},
+    "willTopic": "",
+    "willQos": "0",
+    "willPayload": "",
+    "willMsg": {}
+  }
+]

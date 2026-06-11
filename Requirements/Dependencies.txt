@@ -1,4 +1,6 @@
 https://github.com/bidipta18das-glitch/TechnicalPaperTemplate_SJU.git
+python run_pipeline.py --mode synth (The overall pipeline command)
+
 Main pipeline command src/run_pipeline.py --mode synth 
 Title: Tunnel Exhaust System Project -ML model for predicting air quality in tunnels
 Description: This project focuses on developing a machine learning model to 
@@ -56,3 +58,43 @@ Fan Control
                       ESP32
                         ▼
                      Exhaust Fan
+
+                  
+
+ESP8266 Sensors
+      ↓
+ MQTT
+      ↓
+ Python ML Model
+      ↓
+ MQTT Topic: tunnel/fan
+      ↓
+ ESP8266 Actuator Node
+      ↓
+ Relay
+      ↓
+ Exhaust Fan
+
+
+
+synthesize_data.py
+        │
+        ▼
+Synthetic Dataset CSV
+        │
+        ▼
+run_pipeline.py
+        │
+        ├── preprocessing.py
+        │
+        ├── outlier_detection.py
+        │
+        ├── label_engine.py
+        │
+        ├── sensor_fusion.py
+        │
+        ├── train_model.py
+        │
+        ├── evaluate_model.py
+        │
+        └── fan_control.py

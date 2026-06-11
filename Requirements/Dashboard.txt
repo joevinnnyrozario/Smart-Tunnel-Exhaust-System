@@ -1,0 +1,4 @@
+Page1- model performance. Displayes AQI model accuracy, precision, recall, and F1 score, fan model accuracy.
+Page2- Confusion matrix for AQI model, showing true positives, false positives, true negatives, and false negatives.
+Page3 -Feature importance. Display feature importance graph for random forest model
+Page4- Live sensor monitoring. Display real-time sensor data (MQ2, MQ3, DHT11) in graphs and tables.

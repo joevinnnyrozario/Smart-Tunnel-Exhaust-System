@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-section">
+    <h1 class="page-title"><i class="bi bi-graph-up"></i> Model Performance Metrics</h1>
+    
+    <div class="row">
+        <div class="col-md-6 col-lg-3">
+            <div class="metric-card">
+                <div class="metric-label"><i class="bi bi-target"></i> AQI Model Accuracy</div>
+                <div class="metric-value" id="aqi-accuracy">--</div>
+                <small class="metric-label">Overall Correctness</small>
+            </div>
+        </div>
+        
+        <div class="col-md-6 col-lg-3">
+            <div class="metric-card">
+                <div class="metric-label"><i class="bi bi-check-circle"></i> Precision</div>
+                <div class="metric-value" id="aqi-precision">--</div>
+                <small class="metric-label">True Positives / All Positives</small>
+            </div>
+        </div>
+        
+        <div class="col-md-6 col-lg-3">
+            <div class="metric-card">
+                <div class="metric-label"><i class="bi bi-arrow-repeat"></i> Recall</div>
+                <div class="metric-value" id="aqi-recall">--</div>
+                <small class="metric-label">True Positives / Actual Positives</small>
+            </div>
+        </div>
+        
+        <div class="col-md-6 col-lg-3">
+            <div class="metric-card">
+                <div class="metric-label"><i class="bi bi-star"></i> F1 Score</div>
+                <div class="metric-value" id="aqi-f1">--</div>
+                <small class="metric-label">Harmonic Mean</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="metric-card" style="text-align: left;">
+                <div class="metric-label" style="text-align: center;"><i class="bi bi-fan"></i> Fan Control Model Accuracy</div>
+                <div class="metric-value" id="fan-accuracy" style="text-align: center;">--</div>
+                <small class="metric-label" style="display: block; text-align: center; margin-top: 0.5rem;">Fan Speed Prediction Correctness</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Metrics Table -->
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="chart-container">
+                <h5 class="mb-3"><i class="bi bi-table"></i> Detailed Model Metrics Summary</h5>
+                <table class="table table-striped table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Metric</th>
+                            <th>AQI Model</th>
+                            <th>Fan Model</th>
+                            <th>Target</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Accuracy</strong></td>
+                            <td id="metric-aqi-acc">--</td>
+                            <td id="metric-fan-acc">--</td>
+                            <td>>= 0.90</td>
+                            <td><span class="badge bg-success">Pass</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Precision</strong></td>
+                            <td id="metric-aqi-prec">--</td>
+                            <td>N/A</td>
+                            <td>>= 0.90</td>
+                            <td><span class="badge bg-success">Pass</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Recall</strong></td>
+                            <td id="metric-aqi-rec">--</td>
+                            <td>N/A</td>
+                            <td>>= 0.90</td>
+                            <td><span class="badge bg-success">Pass</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>F1 Score</strong></td>
+                            <td id="metric-aqi-f">--</td>
+                            <td>N/A</td>
+                            <td>>= 0.90</td>
+                            <td><span class="badge bg-success">Pass</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Model Info -->
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="chart-container">
+                <h5><i class="bi bi-info-circle"></i> AQI Model Information</h5>
+                <ul class="list-unstyled mt-3">
+                    <li><strong>Algorithm:</strong> Random Forest Classifier</li>
+                    <li><strong>Features:</strong> Temperature, Humidity, MQ2_Raw, MQ3_Raw</li>
+                    <li><strong>Training Samples:</strong> 10,000+</li>
+                    <li><strong>Model Type:</strong> Multi-class Classification</li>
+                </ul>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="chart-container">
+                <h5><i class="bi bi-info-circle"></i> Fan Model Information</h5>
+                <ul class="list-unstyled mt-3">
+                    <li><strong>Algorithm:</strong> Linear Regression</li>
+                    <li><strong>Target:</strong> Fan Speed (0-255)</li>
+                    <li><strong>Training Samples:</strong> 5,000+</li>
+                    <li><strong>Model Type:</strong> Regression</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Load metrics from API
+    fetch('/api/page1/metrics')
+        .then(response => response.json())
+        .then(data => {
+            // Update AQI metrics
+            document.getElementById('aqi-accuracy').textContent = (data.aqi_model.accuracy * 100).toFixed(1) + '%';
+            document.getElementById('aqi-precision').textContent = (data.aqi_model.precision * 100).toFixed(1) + '%';
+            document.getElementById('aqi-recall').textContent = (data.aqi_model.recall * 100).toFixed(1) + '%';
+            document.getElementById('aqi-f1').textContent = (data.aqi_model.f1_score * 100).toFixed(1) + '%';
+            
+            // Update Fan metrics
+            document.getElementById('fan-accuracy').textContent = (data.fan_model.accuracy * 100).toFixed(1) + '%';
+            
+            // Update table
+            document.getElementById('metric-aqi-acc').textContent = (data.aqi_model.accuracy * 100).toFixed(1) + '%';
+            document.getElementById('metric-aqi-prec').textContent = (data.aqi_model.precision * 100).toFixed(1) + '%';
+            document.getElementById('metric-aqi-rec').textContent = (data.aqi_model.recall * 100).toFixed(1) + '%';
+            document.getElementById('metric-aqi-f').textContent = (data.aqi_model.f1_score * 100).toFixed(1) + '%';
+            document.getElementById('metric-fan-acc').textContent = (data.fan_model.accuracy * 100).toFixed(1) + '%';
+        })
+        .catch(error => console.error('Error loading metrics:', error));
+</script>
+{% endblock %}

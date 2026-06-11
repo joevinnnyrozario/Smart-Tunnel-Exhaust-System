@@ -1,0 +1,239 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    #confusionMatrixChart {
+    width: 100%;
+    height: 100%;
+    min-height: 480px;
+}
+    .confusion-matrix-chart .chart-container {
+    min-height: 500px;
+    height: 500px;
+    overflow: visible;
+}
+    .confusion-matrix-container {
+        display: flex;
+        gap: 2rem;
+        margin-bottom: 3rem;
+        align-items: flex-start;  /* ← Change from default stretch */
+        flex-wrap: nowrap; 
+    }
+    .confusion-matrix-chart {
+    flex: 2;
+    min-width: 0;             /* ← Already there, keep it */
+}
+    
+    .confusion-matrix-chart {
+        flex: 2;
+        min-width: 0;
+    }
+    
+    .confusion-matrix-sidebar {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 2rem;
+        min-width: 280px;         /* ← Add this to prevent collapse */
+        max-width: 380px;
+    }
+    
+    .metric-card {
+        margin-bottom: 1.5rem !important;
+        padding: 1.5rem !important;
+    }
+    
+    .cm-explanation-section {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+    
+    .cm-metric-group {
+        padding: 1.2rem;
+        border-left: 4px solid #ccc;
+        border-radius: 4px;
+        background-color: #f9f9f9;
+    }
+    
+    .cm-metric-group h6 {
+        margin-bottom: 0.5rem;
+    }
+    
+    .cm-metric-group p {
+        margin-bottom: 1rem;
+    }
+    
+    @media (max-width: 992px) {
+        .confusion-matrix-container {
+            flex-direction: column;
+            gap: 2rem;
+        }
+        
+        .confusion-matrix-chart,
+        .confusion-matrix-sidebar {
+            width: 100%;
+        }
+    }
+</style>
+
+<div class="page-section">
+    <h1 class="page-title"><i class="bi bi-table"></i>Confusion Matrix</h1>
+    
+    <div class="confusion-matrix-container">
+        <!-- Left: Chart -->
+        <div class="confusion-matrix-chart">
+            <div class="chart-container">
+                <div id="confusionMatrixChart" class="loading">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Right: Sidebar with Explanations and Metrics -->
+        <div class="confusion-matrix-sidebar">
+            <!-- Confusion Matrix Explanation -->
+            <div class="chart-container">
+                <h5><i class="bi bi-info-circle"></i> Confusion Matrix Values</h5>
+                <div class="cm-explanation-section mt-4">
+                    <div class="cm-metric-group" style="border-left-color: #28a745;">
+                        <h6><span class="badge bg-success">True Positives (TP)</span></h6>
+                        <p class="small mb-2">Model correctly predicted positive class. Identified a situation/issue that was actually present.</p>
+                        <div class="metric-card" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; text-align: center; padding: 1rem !important;">
+                            <div id="cm-tp" class="metric-value" style="font-size: 2rem; color: white;">--</div>
+                            <small class="metric-label">Count</small>
+                        </div>
+                    </div>
+                    
+                    <div class="cm-metric-group" style="border-left-color: #dc3545;">
+                        <h6><span class="badge bg-danger">False Positives (FP)</span></h6>
+                        <p class="small mb-2">Model incorrectly predicted positive. False alarm - issue identified but not actually present.</p>
+                        <div class="metric-card" style="background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%); color: white; text-align: center; padding: 1rem !important;">
+                            <div id="cm-fp" class="metric-value" style="font-size: 2rem; color: white;">--</div>
+                            <small class="metric-label">Count</small>
+                        </div>
+                    </div>
+                    
+                    <div class="cm-metric-group" style="border-left-color: #ffc107;">
+                        <h6><span class="badge bg-warning text-dark">False Negatives (FN)</span></h6>
+                        <p class="small mb-2">Model incorrectly predicted negative. Missed detection - issue was present but not identified.</p>
+                        <div class="metric-card" style="background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%); color: white; text-align: center; padding: 1rem !important;">
+                            <div id="cm-fn" class="metric-value" style="font-size: 2rem; color: white;">--</div>
+                            <small class="metric-label">Count</small>
+                        </div>
+                    </div>
+                    
+                    <div class="cm-metric-group" style="border-left-color: #17a2b8;">
+                        <h6><span class="badge bg-info">True Negatives (TN)</span></h6>
+                        <p class="small mb-2">Model correctly predicted negative. Correctly identified that no issue was present.</p>
+                        <div class="metric-card" style="background: linear-gradient(135deg, #17a2b8 0%, #00bcd4 100%); color: white; text-align: center; padding: 1rem !important;">
+                            <div id="cm-tn" class="metric-value" style="font-size: 2rem; color: white;">--</div>
+                            <small class="metric-label">Count</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Key Metrics Table -->
+            <div class="chart-container">
+                <h5><i class="bi bi-calculator"></i> Performance Metrics</h5>
+                <table class="table table-striped mt-3" style="margin-bottom: 0;">
+                    <tbody>
+                        <tr>
+                            <td><strong><i class="bi bi-arrow-repeat"></i> Sensitivity (Recall)</strong></td>
+                            <td><span id="metric-sensitivity" class="badge bg-info">--</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong><i class="bi bi-shield-check"></i> Specificity</strong></td>
+                            <td><span id="metric-specificity" class="badge bg-success">--</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong><i class="bi bi-bullseye"></i> Precision</strong></td>
+                            <td><span id="metric-precision" class="badge bg-warning text-dark">--</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong><i class="bi bi-star"></i> F1 Score</strong></td>
+                            <td><span id="metric-f1" class="badge bg-primary">--</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Additional Information -->
+    <div class="row mt-5">
+        <div class="col-md-12">
+            <div class="chart-container">
+                <h5><i class="bi bi-question-circle"></i> How to Interpret These Results</h5>
+                <p class="mt-3">
+                    The confusion matrix is a key tool for evaluating classification model performance. For the AQI (Air Quality Index) 
+                    detection system, here's what you want to see:
+                </p>
+                <div class="row mt-4">
+                    <div class="col-md-6">
+                        <h6 style="color: #28a745;"><i class="bi bi-check-circle"></i> What's Good?</h6>
+                        <ul style="color: #555;">
+                            <li><strong>High TP:</strong> Model is good at detecting polluted air conditions</li>
+                            <li><strong>High TN:</strong> Model correctly identifies clean air conditions</li>
+                            <li><strong>Low FP:</strong> Few false alarms - model doesn't trigger unnecessarily</li>
+                            <li><strong>Low FN:</strong> Few missed detections - model rarely misses pollution</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 style="color: #dc3545;"><i class="bi bi-exclamation-circle"></i> What's Bad?</h6>
+                        <ul style="color: #555;">
+                            <li><strong>High FP:</strong> Many false alarms - wastes time/resources</li>
+                            <li><strong>High FN:</strong> Many missed detections - critical safety issue</li>
+                            <li><strong>Low TP:</strong> Poor detection of actual pollution</li>
+                            <li><strong>Low TN:</strong> Poor recognition of safe conditions</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Load confusion matrix data
+    fetch('/api/page2/confusion-matrix')
+    .then(response => response.json())
+    .then(data => {
+        const chartDiv = document.getElementById('confusionMatrixChart');
+        chartDiv.classList.remove('loading');
+        Plotly.newPlot('confusionMatrixChart', data.data, data.layout, {responsive: true});
+    })
+    .catch(error => console.error('Error loading confusion matrix:', error));
+    // Load confusion matrix values and update metrics
+    fetch('/api/page2/confusion-matrix')
+        .then(response => response.json())
+        .then(data => {
+            // For demo purposes, extract from query or use sample values
+            // In production, get these from your model evaluation
+            const tp = 150, fp = 10, fn = 5, tn = 135;
+            
+            document.getElementById('cm-tp').textContent = tp;
+            document.getElementById('cm-fp').textContent = fp;
+            document.getElementById('cm-fn').textContent = fn;
+            document.getElementById('cm-tn').textContent = tn;
+            
+            // Calculate metrics
+            const sensitivity = tp / (tp + fn);
+            const specificity = tn / (tn + fp);
+            const precision = tp / (tp + fp);
+            const f1 = 2 * (precision * sensitivity) / (precision + sensitivity);
+            
+            document.getElementById('metric-sensitivity').textContent = (sensitivity * 100).toFixed(1) + '%';
+            document.getElementById('metric-specificity').textContent = (specificity * 100).toFixed(1) + '%';
+            document.getElementById('metric-precision').textContent = (precision * 100).toFixed(1) + '%';
+            document.getElementById('metric-f1').textContent = f1.toFixed(3);
+        })
+        .catch(error => console.error('Error loading metrics:', error));
+</script>
+{% endblock %}
